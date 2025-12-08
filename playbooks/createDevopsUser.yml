@@ -1,0 +1,10 @@
+- name: Create devops user on all linux servers
+  hosts: all
+  become: true
+  tasks:
+    - name: Ensure DevOps user exists
+      user:
+        name: devops
+        password: "$6$eRCH8N/DNkpmdUei$l6n.rKuFgHhewDdIM77xOM/zXAquTSgC8NZjssX90E7m90UcJwF3/YhcPPATtw21u3OrEu154EzwFyJW6sRa31"
+        shell: /bin/bash
+        state: present
