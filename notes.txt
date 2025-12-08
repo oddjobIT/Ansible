@@ -1,0 +1,4 @@
+#control node is ansible.kmoran.com 10.11.11.102 RHEL 10
+#httpd server is spider.kmoran.com 10.11.11.103  RHEL 9.7
+#fedora 43 server is <name> 10.11.11.101 Fedora 43
+#Database and distro is distro.kmoran.com 10.11.11.203 Ubuntu 24.04
