@@ -1,0 +1,14 @@
+- name: Install and configure Chrony
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Install Chrony package
+      package:
+        name: chrony
+        state: present
+    - name: Enable and start the Chrony service
+      service:
+        name: chronyd
+        state: started
+        enabled: true

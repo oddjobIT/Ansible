@@ -1,0 +1,13 @@
+- name: Deploy static website using a template
+  hosts: webservers
+  become: true
+  vars:
+    site_title: "My Demo Website"
+    heading: "Welcome to My Site"
+    message: "This page was generated with Ansible templates"
+
+  tasks:
+    - name: Render the HTML template
+      template: 
+        src: ../templates/index.html.j2
+        dest: /var/www/html/index2.html

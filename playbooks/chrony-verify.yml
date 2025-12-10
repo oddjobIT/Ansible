@@ -1,0 +1,16 @@
+- name: Verify Chrony time synchronization
+  hosts: all
+  become: true
+  tasks:
+    - name: Check Chrony service status
+      command: systemctl is-active chronyd
+      register: chrony_status
+    - name: Display Chrony service status
+      debug:
+        msg:   "Chrony service is {{  chrony_status.stdout  }} on {{inventory_hostname}}"
+    - name: Get Chrony tracking information
+      command: chronyc tracking
+      register: chrony_tracking
+    - name: Show tracking output
+      debug:
+        var: chrony_tracking.stdout

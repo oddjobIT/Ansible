@@ -1,9 +1,0 @@
-- name: Install httpd on server
-  hosts: server1
-  become: true
-
-  tasks:
-    - name: Ensure httpd in installed
-      package:
-        name: httpd
-        state: present

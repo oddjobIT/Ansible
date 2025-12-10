@@ -1,0 +1,40 @@
+- name: Install httpd on server
+  hosts: webservers
+  become: true
+
+  tasks:
+    - name: Install Nginx on Ubuntu/Debian
+      apt:
+        name: nginx
+        state: present
+        update_cache: true
+      when: ansible_facts['os_family']=="Debian"
+    - name: Install Nginx on Centor/HedHat
+      yum:
+        name: httpd
+        state: present
+      when: ansible_facts['os_family']=="RedHat"
+
+    - name: Ensure Nginx is running
+      service:
+        name: nginx
+        state: started
+        enabled: true
+      when: ansible_facts['os_family']=="Debian"
+    - name: Ensure Apache is running
+      service:
+        name: httpd
+        state: started
+        enabled: true
+      when: ansible_facts['os_family']=="RedHat"
+    
+    - name: Deploy homepage for nginx
+      copy:
+        dest: /var/www/html/index.html
+        content: "<h1>Welcome to your Nginx server</h1>"
+      when: ansible_facts['os_family']=="Debian"
+    - name: Deploy homepage to Apache  
+      copy: 
+        dest: /var/www/html/index.html
+        content: "<h1>Welcome to your Apache server</h1>"
+      when: ansible_facts['os_family']=="RedHat"      
