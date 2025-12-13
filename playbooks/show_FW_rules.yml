@@ -1,0 +1,23 @@
+- name: Verify Firewall Rules on All Servers
+  hosts: all
+  become: yes
+  tasks:
+    - name: Check UFW status
+      command: ufw status
+      register: ufw_output
+      changed_when: false
+      when: ansible_facts.os_family == "Debian"
+    - name: Show UFW results
+      debug:
+        var: ufw_output.stdout
+      when: ansible_facts.os_family == "Debian"
+
+    - name: Check Firewalld status
+      command: firewall-cmd --list-all
+      register: firewalld_output
+      changed_when: false
+      when: ansible_facts.os_family == "RedHat"
+    - name: Show Firewalld results
+      debug:
+        var: firewalld_output.stdout
+      when: ansible_facts.os_family == "RedHat"

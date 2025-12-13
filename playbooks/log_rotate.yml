@@ -1,0 +1,20 @@
+- name: Manage log size with logrotate
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Set log rotation policy for custom-app
+      copy:
+        dest: /etc/logrotate.d/custom-app
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          /var/log/custom-app.log {
+            size 50M         # Rotates when file reaches 50MB
+            rotate 7         # Keeps seven compressed backups
+            compress         # Compress rotated log
+            notifempty       # Skips rotation if log is empty
+            missingok        # Avoids errors if the file does not exist
+            create 0640 root root  # Creates a new log after rotation
+          }

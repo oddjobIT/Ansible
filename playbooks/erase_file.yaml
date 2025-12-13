@@ -1,0 +1,9 @@
+- name: Remove a specific file
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Delete target ile
+      ansible.builtin.file:
+        path: /etc/logrotate.d/custom.app
+        state: absent
