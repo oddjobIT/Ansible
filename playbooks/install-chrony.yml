@@ -4,11 +4,11 @@
 
   tasks:
     - name: Install Chrony package
-      package:
+      ansible.builtin.package:
         name: chrony
         state: present
     - name: Enable and start the Chrony service
-      service:
+      ansible.builtin.service:
         name: chronyd
         state: started
         enabled: true
