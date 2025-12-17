@@ -1,10 +1,36 @@
 - name: Create devops user on all linux servers
   hosts: all
   become: true
+  vars:
+    devops_user: "devops"
+    rh_sudo_group: "wheel"
+    deb_sudo_group: "sudo"
   tasks:
-    - name: Ensure DevOps user exists
+    - name: Ensure DevOps user exists in RedHat
       ansible.builtin.user:
-        name: devops
+        name: "{{ devops_user }}"
         password: "$6$eRCH8N/DNkpmdUei$l6n.rKuFgHhewDdIM77xOM/zXAquTSgC8NZjssX90E7m90UcJwF3/YhcPPATtw21u3OrEu154EzwFyJW6sRa31"
         shell: /bin/bash
+        groups: "{{ rh_sudo_group }}"
+        append: true
         state: present
+      register: user_result
+      when: ansible_facts['os_family']=="RedHat"
+
+    - name: Ensure DevOps user exists in Ubuntu/Debian
+      ansible.builtin.user:
+        name: "{{ devops_user }}"
+        password: "$6$eRCH8N/DNkpmdUei$l6n.rKuFgHhewDdIM77xOM/zXAquTSgC8NZjssX90E7m90UcJwF3/YhcPPATtw21u3OrEu154EzwFyJW6sRa31"
+        shell: /bin/bash
+        groups: "{{ deb_sudo_group }}"
+        append: true
+        state: present
+      register: user_result
+      when: ansible_facts['os_family']=="Debian"
+
+    - name: Add ssh key
+      ansible.posix.authorized_key:
+        user: devops
+        state: present
+        key: "{{ lookup('file', '/home/kmoran/progs/Ansible/files/public_keys/devops_pub_openssh') }}"
+        manage_dir: true
