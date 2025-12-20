@@ -1,0 +1,9 @@
+- name: Deploy disk alert script
+  hosts: all
+  become: true
+  tasks:
+    - name: Copy km_disk_check.sh to nodes
+      ansible.builtin.copy:
+        src: /home/kmoran/progs/Ansible/files/km_disk_check.sh
+        dest: /usr/local/bin/km_disk_check.sh
+        mode: '0755'
