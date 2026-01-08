@@ -7,3 +7,9 @@
         src: /home/kmoran/progs/Ansible/files/km_disk_check.sh
         dest: /usr/local/bin/km_disk_check.sh
         mode: '0755'
+    - name: Schedule hourly cron job for disk check
+      ansible.builtin.cron:
+        name: "Hourly disk Utilization Check"
+        user: root
+        job: "/usr/local/bin/km_disk_check.sh"
+        minute: "0"

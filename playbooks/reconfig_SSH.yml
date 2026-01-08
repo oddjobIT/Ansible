@@ -1,0 +1,40 @@
+- name: Reconfigure SSH to be more secure
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Backup existing sshd_config
+      ansible.builtin.copy:
+        src: /etc/ssh/sshd_config
+        dest: /etc/ssh/sshd_config.backup
+        remote_src: true
+    - name: Apply secure SSH options
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        create: flase
+      loop:
+        - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+        - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+        - { regexp: '^#?MaxAuthTries', line: 'MaxAuthTries 3' }
+        - { regexp: '^#?LoginGraceTime', line: 'LoginGraceTime 20' }
+    - name: Validate SSH configuration syntax
+      command: sshd -t
+      register: ssh_test
+      ignore_errors: true
+    - name: Fail if SSH configuration is invalid
+      ansible.builtin.fail:
+        msg: "SSH configuration contains errors. Fix them before restarting."
+      when: ssh_test.rc != 0
+    - name: Restart SSH service
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+        enabled: true
+      when: ssh_test.rc == 0
+    - name: Check SSH service status
+      ansible.builtin.service:
+        name: sshd
+        state: started
+        

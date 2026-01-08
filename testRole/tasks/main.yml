@@ -1,0 +1,5 @@
+
+- name: Install Nginx on Ubuntu/Debian
+  ansible.builtin.package:
+    name: nginx
+    state: absent

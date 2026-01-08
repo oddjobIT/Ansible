@@ -1,0 +1,9 @@
+ansible_connection: winrm
+ansible_winrm_transport: basic
+ansible_winrm_scheme: http
+ansible_port: 5985
+ansible_winrm_server_cert_validation: ignore
+
+ansible_user: ansibleadmin
+ansible_password: T0day1s123!!
+ansible_become: false

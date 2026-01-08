@@ -1,0 +1,6 @@
+---
+- name: Testrole playbook
+  hosts: webservers
+  become: true
+  roles:
+    - testRole
