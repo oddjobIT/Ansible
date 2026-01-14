@@ -1,5 +1,5 @@
 - name: Export scheduled tasks from source
-  hosts: windows_servers
+  hosts: win10-1
   gather_facts: false
   become: false
 
@@ -25,7 +25,7 @@
         $name = "{{ item }}"
         $safe = $name -replace '[\\/]', '_'
         $out  = Join-Path "{{ export_dir }}" ($safe + ".xml")
-        schtasks /Query /TN "$name" /XML | Out-File -FilePath $out -Encoding utf8
+        schtasks /Query /TN "$name" /XML | Out-File -FilePath $out -Encoding Unicode
         if ($LASTEXITCODE -ne 0) { throw "Failed to export task: $name" }
       loop: "{{ task_names }}"
 
@@ -34,4 +34,31 @@
         src: "{{ export_dir }}/{{ item | regex_replace('[\\\\/]', '_') }}.xml"
         dest: "./task_exports/"
         flat: true
+      loop: "{{ task_names }}"
+
+- name: Import scheduled tasks to target
+  hosts: win11-1
+  gather_facts: false
+  vars:
+    task_names:
+      - '\KM-Tasks\Daily Google Ping'
+    import_dir: 'C:/temp/TaskImport'
+  tasks:
+    - name: Ensure import directory exists
+      ansible.windows.win_file:
+        path: "{{ import_dir }}"
+        state: directory
+
+    - name: Copy XML exports to target
+      ansible.windows.win_copy:
+        src: "./task_exports/{{ item | regex_replace('[\\\\/]', '_') }}.xml"
+        dest: "{{ import_dir }}/{{ item | regex_replace('[\\\\/]', '_') }}.xml"
+      loop: "{{ task_names }}"
+
+    - name: Register tasks from XML (create or overwrite) as SYSTEM
+      ansible.windows.win_shell: |
+        $name = "{{ item }}"
+        $safe = $name -replace '[\\/]', '_'
+        $xml  = Join-Path "{{ import_dir }}" ($safe + ".xml")
+        schtasks /Create /TN "$name" /XML "$xml" /RU "SYSTEM" /F
       loop: "{{ task_names }}"
