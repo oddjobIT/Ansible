@@ -8,6 +8,7 @@ destination_servers:
 task_names:
   - Daily Google Ping
   - Daily Google Ping 2
+  - Daily Google Ping 3
 export_dir: "D:/temp/TaskExport"
 import_dir: "C:/temp/TaskImport"
 controller_dir: "/tmp/task_exports"

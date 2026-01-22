@@ -5,7 +5,7 @@
   hosts: localhost
   gather_facts: false
   vars:
-    controller_export_dir: "./task_exports"
+    controller_export_dir: "{{ controller_dir }}"
   tasks:
     - name: Prep controller workspace
       ansible.builtin.include_role:
@@ -49,3 +49,32 @@
       ansible.builtin.include_role:
         name: win_scheduledTask
         tasks_from: 50_import_on_destinations.yml
+
+- name: Clean up controller (Linux)
+  hosts: localhost
+  gather_facts: false
+  vars:
+    controller_export_dir: "{{ controller_dir }}"
+  tasks:
+    - name: Clean up controller workspace
+      ansible.builtin.include_role:
+        name: win_scheduledTask
+        tasks_from: 60_clean_up_controller.yml
+
+- name: Clean up source (Windows)
+  hosts: "{{ source_server }}"
+  gather_facts: false
+  tasks:
+    - name: Clean up source
+      ansible.builtin.include_role:
+        name: win_scheduledTask
+        tasks_from: 70_clean_up_source.yml
+
+- name: Clean up destinations (Windows)
+  hosts: "{{ destination_servers }}"
+  gather_facts: false
+  tasks:
+    - name: Clean up destination servers
+      ansible.builtin.include_role:
+        name: win_scheduledTask
+        tasks_from: 80_clean_up_destinations.yml       
