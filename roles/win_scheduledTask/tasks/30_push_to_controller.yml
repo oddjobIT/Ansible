@@ -1,0 +1,7 @@
+---
+- name: Fetch exported XML files to controller
+  ansible.builtin.fetch:
+    src: "{{ export_dir }}/{{ item | regex_replace('[\\\\/]', '_') }}.xml"
+    dest: "{{ controller_dir }}/"
+    flat: true
+  loop: "{{ task_names }}"

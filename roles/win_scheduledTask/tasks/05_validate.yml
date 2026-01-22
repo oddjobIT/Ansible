@@ -1,0 +1,48 @@
+---
+- name: Validate required variables are defined
+  ansible.builtin.assert:
+    that:
+      - source_server is defined
+      - destination_servers is defined
+      - task_names is defined
+      - export_dir is defined
+      - import_dir is defined
+      - controller_dir is defined
+    fail_msg: >
+      Missing required variables. Expected:
+      source_server, destination_servers, task_names, export_dir, import_dir, controller_dir.
+
+- name: Validate variable types
+  ansible.builtin.assert:
+    that:
+      - source_server is string
+      - export_dir is string
+      - import_dir is string
+      - controller_dir is string
+      - destination_servers is iterable
+      - task_names is iterable
+    fail_msg: >
+      Variable types are incorrect.
+      source_server/export_dir/import_dir/controller_dir must be strings,
+      destination_servers and task_names must be lists (iterables).
+
+- name: Validate lists are not empty
+  ansible.builtin.assert:
+    that:
+      - (destination_servers | length) > 0
+      - (task_names | length) > 0
+    fail_msg: "destination_servers and task_names must not be empty."
+
+- name: Validate no leading backslash in task names
+  ansible.builtin.assert:
+    that:
+      - item is not match('^\\\+')
+    fail_msg: "Task name must not start with '\\': {{ item }}"
+  loop: "{{ task_names }}"
+
+- name: Validate Windows path formats for export/import dirs
+  ansible.builtin.assert:
+    that:
+      - export_dir is match('^[A-Za-z]:[\\\\/].+')
+      - import_dir is match('^[A-Za-z]:[\\\\/].+')
+    fail_msg: "export_dir/import_dir must look like D:/path or D:\\path (got export_dir={{ export_dir }}, import_dir={{ import_dir }})"

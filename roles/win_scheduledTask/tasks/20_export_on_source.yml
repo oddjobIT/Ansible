@@ -1,0 +1,14 @@
+---
+- name: Ensure export directory exists
+  ansible.windows.win_file:
+    path: "{{ export_dir }}"
+    state: directory
+
+- name: Export tasks to XML
+  ansible.windows.win_shell: |
+    $name = "{{ item }}"
+    $safe = $name -replace '[\\/]', '_'
+    $out  = Join-Path "{{ export_dir }}" ($safe + ".xml")
+    schtasks /Query /TN "$name" /XML | Out-File -FilePath $out -Encoding Unicode
+    if ($LASTEXITCODE -ne 0) { throw "Failed to export task: $name" }
+  loop: "{{ task_names }}"

@@ -1,0 +1,13 @@
+---
+#win_playbook_scheduledTask.yml
+- name: Copy scheduled tasks between Windows servers
+  hosts: localhost
+  roles:
+    - role: ../roles/win_scheduledTask_copy
+      vars:
+        source_server: "{{ source_server | trim }}"
+        export_dir: "{{ export_dir | trim }}"
+        destination_servers: "{{ destination_servers | split(',') | map('trim') | list }}"
+        import_dir: "{{ import_dir | trim }}"
+        tasks_to_copy: "{{ tasks_to_copy | split(',') | map('trim') | list }}"
+        controller_dir: "{{ controller_dir | trim }}"

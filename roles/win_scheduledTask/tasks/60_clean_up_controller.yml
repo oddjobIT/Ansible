@@ -1,0 +1,9 @@
+---
+- name: Delete task_exports folder
+  become: true
+  become_method: sudo
+  ansible.builtin.file:
+    path: "{{ controller_dir }}"
+    state: absent
+  delegate_to: localhost
+  run_once: true

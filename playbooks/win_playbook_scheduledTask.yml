@@ -1,0 +1,51 @@
+---
+# playbooks/win_playbook_scheduledTask.yml
+
+- name: Prep controller (Linux)
+  hosts: localhost
+  gather_facts: false
+  vars:
+    controller_export_dir: "./task_exports"
+  tasks:
+    - name: Prep controller workspace
+      ansible.builtin.include_role:
+        name: win_scheduledTask
+        tasks_from: 10_prep_controller.yml
+
+- name: Export scheduled tasks on source (Windows)
+  hosts: "{{ source_server }}"
+  gather_facts: false
+  tasks:
+    - name: Export tasks to XML on source
+      ansible.builtin.include_role:
+        name: win_scheduledTask
+        tasks_from: 20_export_on_source.yml
+
+- name: Push XMLs to controller
+  hosts: "{{ source_server }}"
+  gather_facts: false
+  vars:
+    source_host: "{{ source_server }}"
+  tasks:
+    - name: Push XMLs from source to controller
+      ansible.builtin.include_role:
+        name: win_scheduledTask
+        tasks_from: 30_push_to_controller.yml
+
+- name: Pull XMLs to destinations
+  hosts: "{{ destination_servers }}"
+  gather_facts: false
+  tasks:
+    - name: Pull XMLs from controller to destination
+      ansible.builtin.include_role:
+        name: win_scheduledTask
+        tasks_from: 40_pull_to_destination.yml
+
+- name: Import scheduled tasks on destinations (Windows)
+  hosts: "{{ destination_servers }}"
+  gather_facts: false
+  tasks:
+    - name: Import tasks from XML on destination(s)
+      ansible.builtin.include_role:
+        name: win_scheduledTask
+        tasks_from: 50_import_on_destinations.yml

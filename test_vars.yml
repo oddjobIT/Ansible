@@ -1,5 +1,13 @@
+---
+#test_vars.yml
 source_server: win10-1
-destination_server: win11-1
+destination_servers: 
+  - win11-1
+  - win10-2
+  - win10-3
 task_names:
-  - "Daily Google Ping"
-  - "Daily Google Ping 2"
+  - Daily Google Ping
+  - Daily Google Ping 2
+export_dir: "D:/temp/TaskExport"
+import_dir: "C:/temp/TaskImport"
+controller_dir: "/tmp/task_exports"

@@ -1,0 +1,16 @@
+---
+- name: Show received variables
+  ansible.builtin.debug:
+    msg:
+      source_server: "{{ source_server }}"
+      destination_servers: "{{ destination_servers }}"
+      task_names: "{{ task_names }}"
+      export_dir: "{{ export_dir }}"
+      import_dir: "{{ import_dir }}"
+      controller_dir: "{{ controller_dir }}"
+
+- name: Show variable types (super useful in AAP)
+  ansible.builtin.debug:
+    msg:
+      destination_servers_type: "{{ destination_servers | type_debug }}"
+      task_names_type: "{{ task_names | type_debug }}"

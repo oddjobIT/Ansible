@@ -1,8 +1,10 @@
+---
+# Ansible playbook to export scheduled tasks from a source Windows server
+# and import them to a target Windows server.
+
 - name: Prep controller
   hosts: localhost
   gather_facts: false
-  vars:
-    controller_dir: '/tmp/task_exports'
 
   tasks:
     - name: Ensure local export folder exists
@@ -16,13 +18,6 @@
   hosts: win10-1
   gather_facts: false
   become: false
-
-  vars:
-    task_names:
-      - 'Daily Google Ping'
-      - 'Daily Google Ping 2'
-    export_dir: 'D:/temp/TaskExport'
-    controller_dir: '/tmp/task_exports'
 
   tasks:
     - name: Ensure export directory exists
@@ -57,12 +52,6 @@
 - name: Import scheduled tasks to target
   hosts: win11-1
   gather_facts: false
-  vars:
-    task_names:
-      - 'Daily Google Ping'
-      - 'Daily Google Ping 2'
-    import_dir: 'C:/temp/TaskImport'
-    controller_dir: '/tmp/task_exports'
 
   tasks:
     - name: Ensure import directory exists
