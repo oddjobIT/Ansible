@@ -12,27 +12,22 @@
       prompt: "Enter DESTINATION server (import to)"
       private: no
 
+    - name: task_name_input
+      prompt: "Enter scheduled task name to copy (one task). Example: Daily Google Ping"
+      private: no
+      default: "Daily Google Ping"
+
   vars:
+    # Windows paths (override via -e or AAP Survey if desired)
     export_dir: 'D:\temp\TaskExport'
     import_dir: 'C:\temp\TaskImport'
     controller_export_dir: './task_exports'
 
   tasks:
-    - name: Prompt for task name only if task_names not provided (local runs)
-      ansible.builtin.pause:
-        prompt: "Enter scheduled task name to copy (one task). Example: Daily Google Ping"
-      register: task_in
-      when:
-        - task_names is not defined
-        - lookup('env', 'AWX_TASK_ID') | length == 0
-
-    - name: Set task_names from prompt (only if needed)
+    - name: Normalize task_names list
       ansible.builtin.set_fact:
         task_names:
-          - "{{ task_in.user_input | trim }}"
-      when:
-        - task_names is not defined
-        - task_in is defined
+          - "{{ task_name_input | trim }}"
 
     - name: Validate required vars
       ansible.builtin.assert:
@@ -40,14 +35,18 @@
           - source_server | length > 0
           - destination_server | length > 0
           - source_server != destination_server
-          - task_names is defined
-          - task_names | length > 0
+          - task_names[0] | length > 0
+        fail_msg: "Source/destination must be non-empty and different; task name must be non-empty."
 
+    # Optional: validate inventory membership (recommended if these are inventory hostnames)
     - name: Validate servers exist in inventory
       ansible.builtin.assert:
         that:
           - source_server in groups['all']
           - destination_server in groups['all']
+        fail_msg: >
+          source_server and destination_server must be inventory hostnames (present in groups['all']).
+          If you want to pass IP/FQDN not in inventory, we can adapt add_host to set ansible_host.
 
     - name: Add source and destination to scoped group
       ansible.builtin.add_host:
@@ -63,7 +62,7 @@
         state: directory
 
 
-- name: Export from source and import to destination (no fetch, WinRM-safe)
+- name: Export from source and import to destination (scoped targets only)
   hosts: scoped_targets
   gather_facts: false
 
@@ -71,14 +70,6 @@
     export_dir: 'D:\temp\TaskExport'
     import_dir: 'C:\temp\TaskImport'
     controller_export_dir: './task_exports'
-
-  pre_tasks:
-    - name: Build task → xml filename map (controller-side)
-      ansible.builtin.set_fact:
-        task_files: "{{ task_files | default({}) | combine({ item: (item | regex_replace('[\\\\/]', '_')) ~ '.xml' }) }}"
-      loop: "{{ task_names }}"
-      run_once: true
-      delegate_to: localhost
 
   tasks:
     # -------------------------
@@ -93,7 +84,8 @@
     - name: Export task(s) to XML on source
       ansible.windows.win_shell: |
         $name = "{{ item }}"
-        $out  = Join-Path "{{ export_dir }}" "{{ task_files[item] }}"
+        $safe = $name -replace '[\\/]', '_'
+        $out  = Join-Path "{{ export_dir }}" ($safe + ".xml")
 
         schtasks /Query /TN "$name" /XML | Out-File -FilePath $out -Encoding Unicode
         if ($LASTEXITCODE -ne 0) { throw "Failed to export task: $name" }
@@ -101,57 +93,20 @@
       changed_when: false
       when: inventory_hostname == source_server
 
-    - name: Verify XML exists on source
-      ansible.windows.win_stat:
-        path: "{{ export_dir }}\\{{ task_files[item] }}"
-      register: src_xml
+    - name: Fetch exported XML files to controller
+      ansible.builtin.fetch:
+        src: "{{ export_dir }}/{{ item | regex_replace('[\\\\/]', '_') }}.xml"
+        dest: "{{ controller_export_dir }}/"
+        flat: true
       loop: "{{ task_names }}"
       when: inventory_hostname == source_server
 
-    - name: Fail if export XML missing on source
-      ansible.builtin.assert:
-        that:
-          - item.stat.exists
-        fail_msg: "Export XML missing on source: {{ export_dir }}\\{{ task_files[item.item] }}"
-      loop: "{{ src_xml.results }}"
-      when: inventory_hostname == source_server
-
-    # -------------------------
-    # COPY SOURCE → CONTROLLER (win_slurp)
-    # -------------------------
-    - name: Slurp exported XML files from source (base64 over WinRM)
-      ansible.windows.win_slurp:
-        src: "{{ export_dir }}\\{{ task_files[item] }}"
-      register: slurped_xml
+    - name: Fetch exported XML files to controller
+      ansible.builtin.fetch:
+        src: "{{ export_dir }}/{{ item | regex_replace('[\\\\/]', '_') }}.xml"
+        dest: "./task_exports/"
+        flat: true
       loop: "{{ task_names }}"
-      when: inventory_hostname == source_server
-
-    - name: Write XML files to controller
-      ansible.builtin.copy:
-        dest: "{{ controller_export_dir }}/{{ task_files[item.item] }}"
-        content: "{{ item.content | b64decode }}"
-        mode: "0644"
-      loop: "{{ slurped_xml.results }}"
-      delegate_to: localhost
-      run_once: true
-
-    - name: Verify XML exists on controller
-      ansible.builtin.stat:
-        path: "{{ controller_export_dir }}/{{ task_files[item] }}"
-      register: ctrl_xml
-      loop: "{{ task_names }}"
-      delegate_to: localhost
-      run_once: true
-
-    - name: Fail if XML missing on controller
-      ansible.builtin.assert:
-        that:
-          - item.stat.exists
-        fail_msg: "XML missing on controller: {{ controller_export_dir }}/{{ task_files[item.item] }}"
-      loop: "{{ ctrl_xml.results }}"
-      delegate_to: localhost
-      run_once: true
-
     # -------------------------
     # IMPORT on destination
     # -------------------------
@@ -163,15 +118,16 @@
 
     - name: Copy XML exports from controller to destination
       ansible.windows.win_copy:
-        src: "{{ controller_export_dir }}/{{ task_files[item] }}"
-        dest: "{{ import_dir }}\\{{ task_files[item] }}"
+        src: "{{ controller_export_dir }}/{{ item | regex_replace('[\\\\/]', '_') }}.xml"
+        dest: "{{ import_dir }}\\{{ item | regex_replace('[\\\\/]', '_') }}.xml"
       loop: "{{ task_names }}"
       when: inventory_hostname == destination_server
 
     - name: Register task(s) from XML on destination as SYSTEM (overwrite)
       ansible.windows.win_shell: |
         $name = "{{ item }}"
-        $xml  = Join-Path "{{ import_dir }}" "{{ task_files[item] }}"
+        $safe = $name -replace '[\\/]', '_'
+        $xml  = Join-Path "{{ import_dir }}" ($safe + ".xml")
 
         schtasks /Create /TN "$name" /XML "$xml" /RU "SYSTEM" /F
         if ($LASTEXITCODE -ne 0) { throw "Failed to import task: $name" }

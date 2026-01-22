@@ -1,0 +1,5 @@
+source_server: win10-1
+destination_server: win11-1
+task_names:
+  - "Daily Google Ping"
+  - "Daily Google Ping 2"

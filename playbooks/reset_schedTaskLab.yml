@@ -1,0 +1,31 @@
+---
+- name: Remove task exports from source windows server
+  hosts: win10-1
+  gather_facts: false
+
+  tasks:
+    - name: Delete target file
+      ansible.windows.win_file:
+        path: 'D:\temp\TaskExport'
+        state: absent
+
+- name: Remove task_exports folder from controller
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Delete target file
+      ansible.builtin.file:
+        path: /tmp/task_exports
+        state: absent
+
+- name: Remove task exports from destination windows server
+  hosts: win11-1
+  gather_facts: false
+
+  tasks:
+    - name: Delete target file
+      ansible.windows.win_file:
+        path: 'C:\temp\TaskImport'
+        state: absent
