@@ -1,5 +1,0 @@
----
-- name: Delete import directory
-  ansible.windows.win_file:
-    path: "{{ import_dir }}"
-    state: absent

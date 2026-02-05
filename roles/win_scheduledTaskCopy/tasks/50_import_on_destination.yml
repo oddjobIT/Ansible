@@ -1,0 +1,6 @@
+---
+- name: 50 Import scheduled tasks on each destination
+  ansible.builtin.include_tasks: 51_import_on_destination_single.yml
+  loop: "{{ destination_servers }}"
+  loop_control:
+    loop_var: dest_host

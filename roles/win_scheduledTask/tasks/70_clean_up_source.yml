@@ -1,5 +1,0 @@
----
-- name: Delete export directory
-  ansible.windows.win_file:
-    path: "{{ export_dir }}"
-    state: absent

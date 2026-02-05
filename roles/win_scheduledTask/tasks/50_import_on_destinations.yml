@@ -1,8 +1,0 @@
----
-- name: Register tasks from XML (create or overwrite) as SYSTEM
-  ansible.windows.win_shell: |
-    $name = "{{ item }}"
-    $safe = $name -replace '[\\/]', '_'
-    $xml  = Join-Path "{{ import_dir }}" ($safe + ".xml")
-    schtasks /Create /TN "$name" /XML "$xml" /RU "SYSTEM" /F
-  loop: "{{ task_names }}"

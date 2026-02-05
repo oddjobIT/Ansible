@@ -1,0 +1,6 @@
+---
+- name: 40 Copy XML exports from controller to each destination
+  ansible.builtin.include_tasks: 41_pull_to_destination_single.yml
+  loop: "{{ destination_servers }}"
+  loop_control:
+    loop_var: dest_host

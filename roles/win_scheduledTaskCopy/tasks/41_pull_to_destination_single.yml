@@ -1,0 +1,15 @@
+---
+- name: 41 Copy XML exports to destination host
+  block:
+    - name: 41 Ensure import directory exists on destination {{ dest_host }}
+      ansible.windows.win_file:
+        path: "{{ import_dir }}"
+        state: directory
+
+    - name: 41 Copy XML exports to destination {{ dest_host }}
+      ansible.windows.win_copy:
+        src: "{{ controller_dir }}/{{ item | regex_replace('[\\\\/]', '_') }}.xml"
+        dest: "{{ import_dir }}\\{{ item | regex_replace('[\\\\/]', '_') }}.xml"
+      loop: "{{ task_names }}"
+
+  delegate_to: "{{ dest_host }}"

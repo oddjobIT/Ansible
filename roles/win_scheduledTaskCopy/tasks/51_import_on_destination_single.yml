@@ -1,0 +1,13 @@
+---
+- name: 51 Import scheduled tasks on destination
+  block:
+
+    - name: 51 Register tasks from XML as SYSTEM
+      ansible.windows.win_shell: |
+        $name = "{{ item }}"
+        $safe = $name -replace '[\\/]', '_'
+        $xml  = Join-Path "{{ import_dir }}" ($safe + ".xml")
+        schtasks /Create /TN "$name" /XML "$xml" /RU "SYSTEM" /F
+      loop: "{{ task_names }}"
+
+  delegate_to: "{{ dest_host }}"
