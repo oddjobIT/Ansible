@@ -1,10 +1,10 @@
 ---
 - name: 10 Ensure controller staging folder exists
+  delegate_to: localhost
+  run_once: true
   become: true
   become_method: ansible.builtin.sudo
   ansible.builtin.file:
     path: "{{ controller_dir }}"
     state: directory
     mode: "1777"
-  delegate_to: localhost
-  run_once: true

@@ -1,9 +1,9 @@
 ---
 - name: 80 Delete import directory on each destination
+  delegate_to: "{{ dest_host }}"
   ansible.windows.win_file:
     path: "{{ import_dir }}"
     state: absent
   loop: "{{ destination_servers }}"
   loop_control:
     loop_var: dest_host
-  delegate_to: "{{ dest_host }}"

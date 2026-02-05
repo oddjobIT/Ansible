@@ -1,9 +1,10 @@
 ---
 - name: 60 Delete task_exports folder
+  delegate_to: localhost
+  run_once: true
   become: true
   become_method: ansible.builtin.sudo
   ansible.builtin.file:
     path: "{{ controller_dir }}"
     state: absent
-  delegate_to: localhost
-  run_once: true
+  

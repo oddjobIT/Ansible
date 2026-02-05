@@ -1,5 +1,6 @@
 ---
 - name: 51 Import scheduled tasks on destination
+  delegate_to: "{{ dest_host }}"
   block:
 
     - name: 51 Register tasks from XML as SYSTEM
@@ -9,5 +10,4 @@
         $xml  = Join-Path "{{ import_dir }}" ($safe + ".xml")
         schtasks /Create /TN "$name" /XML "$xml" /RU "SYSTEM" /F
       loop: "{{ task_names }}"
-
-  delegate_to: "{{ dest_host }}"
+      

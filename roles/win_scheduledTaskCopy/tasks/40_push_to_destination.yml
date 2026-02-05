@@ -1,0 +1,6 @@
+---
+- name: 40 Push XML exports from controller to each destination
+  ansible.builtin.include_tasks: 41_push_to_destination_single.yml
+  loop: "{{ destination_servers }}"
+  loop_control:
+    loop_var: dest_host

@@ -1,8 +1,9 @@
 ---
-- name: 30 Push exported XML files to controller
+- name: 30 Fetch exported XML files to controller
+  delegate_to: "{{ source_server }}"
   ansible.builtin.fetch:
     src: "{{ export_dir }}/{{ item | regex_replace('[\\\\/]', '_') }}.xml"
     dest: "{{ controller_dir }}/"
     flat: true
   loop: "{{ task_names }}"
-  delegate_to: "{{ source_server }}"
+  

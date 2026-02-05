@@ -3,8 +3,8 @@
 - import_tasks: 05_validate.yml
 - import_tasks: 10_prep_controller.yml
 - import_tasks: 20_export_on_source.yml
-- import_tasks: 30_push_to_controller.yml
-- import_tasks: 40_pull_to_destination.yml
+- import_tasks: 30_fetch_to_controller.yml
+- import_tasks: 40_push_to_destination.yml
 - import_tasks: 50_import_on_destination.yml
 - import_tasks: 60_clean_up_controller.yml
 - import_tasks: 70_clean_up_source.yml

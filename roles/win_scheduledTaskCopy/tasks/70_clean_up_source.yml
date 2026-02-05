@@ -1,6 +1,7 @@
 ---
 - name: 70 Delete source export directory
+  delegate_to: "{{ source_server }}"
   ansible.windows.win_file:
     path: "{{ export_dir }}"
     state: absent
-  delegate_to: "{{ source_server }}"
+  
