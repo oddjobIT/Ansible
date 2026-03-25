@@ -13,7 +13,7 @@
   hosts: localhost
   connection: local
   become: true
-  become_method: sudo
+  become_method: ansible.builtin.sudo
   gather_facts: false
 
   tasks:
