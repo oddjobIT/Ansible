@@ -1,0 +1,116 @@
+---
+- name: 51 Import scheduled tasks on destination {{ dest_host }}
+  delegate_to: "{{ dest_host }}"
+  block:
+
+    - name: 51 Check that XML files exist on destination {{ dest_host }}
+      ansible.windows.win_stat:
+        path: "{{ import_dir }}\\{{ item | regex_replace('[\\\\/]', '_') }}.xml"
+      loop: "{{ task_names }}"
+      loop_control:
+        label: "{{ item }}"
+      register: import_xml_stats
+
+    - name: 51 Fail if XML file is missing or empty on {{ dest_host }}
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - (item.stat.size | default(0) | int) > 0
+        fail_msg: >-
+          Import XML missing or empty on destination {{ dest_host }}
+          for task '{{ item.item }}' at
+          {{ import_dir }}\{{ item.item | regex_replace('[\\\\/]', '_') }}.xml
+      loop: "{{ import_xml_stats.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: 51 Check whether scheduled tasks already exist on {{ dest_host }}
+      ansible.windows.win_shell: |
+        schtasks /Query /TN "{{ item }}"
+      loop: "{{ task_names }}"
+      loop_control:
+        label: "{{ item }}"
+      register: task_check
+      changed_when: false
+      failed_when: false
+
+    - name: 51 Create scheduled task if missing on {{ dest_host }}
+      ansible.windows.win_shell: |
+        $ErrorActionPreference = 'Stop'
+
+        $name = "{{ item.item }}"
+        $safe = $name -replace '[\\/]', '_'
+        $xml  = Join-Path "{{ import_dir }}" ($safe + ".xml")
+
+        if (-not (Test-Path $xml)) {
+          throw "XML file not found for task [$name]: $xml"
+        }
+
+        $result = schtasks /Create /TN "$name" /XML "$xml" /RU "SYSTEM" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+          throw "schtasks /Create failed for task [$name]. Output: $result"
+        }
+
+        Write-Output "Created scheduled task: $name"
+      when: item.rc != 0
+      loop: "{{ task_check.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      register: create_results
+      changed_when: true
+
+    - name: 51 Verify scheduled tasks exist after import on {{ dest_host }}
+      ansible.windows.win_shell: |
+        schtasks /Query /TN "{{ item }}"
+      loop: "{{ task_names }}"
+      loop_control:
+        label: "{{ item }}"
+      register: verify_task_check
+      changed_when: false
+      failed_when: false
+
+    - name: 51 Fail if scheduled task still does not exist after import on {{ dest_host }}
+      ansible.builtin.assert:
+        that:
+          - item.rc == 0
+        fail_msg: >-
+          Scheduled task '{{ item.item }}' was not present after import
+          on destination {{ dest_host }}.
+          stdout={{ item.stdout | default('') }}
+          stderr={{ item.stderr | default('') }}
+      loop: "{{ verify_task_check.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: 51 Summarize import results for {{ dest_host }}
+      ansible.builtin.debug:
+        msg:
+          destination: "{{ dest_host }}"
+          total_tasks_requested: "{{ task_names | length }}"
+          tasks_already_present: >-
+            {{
+              task_check.results
+              | selectattr('rc', 'equalto', 0)
+              | map(attribute='item')
+              | list
+            }}
+          tasks_created: >-
+            {{
+              (create_results.results | default([]))
+              | selectattr('changed', 'defined')
+              | selectattr('changed')
+              | map(attribute='item.item')
+              | list
+            }}
+
+  rescue:
+    - name: 51 Report import failure for destination {{ dest_host }}
+      ansible.builtin.debug:
+        msg: >-
+          Scheduled task import failed on destination {{ dest_host }}.
+          Review the failed task output above for the exact task name,
+          XML path, and schtasks error details.
+
+    - name: 51 Fail import stage for destination {{ dest_host }}
+      ansible.builtin.fail:
+        msg: "Scheduled task import failed on destination {{ dest_host }}"

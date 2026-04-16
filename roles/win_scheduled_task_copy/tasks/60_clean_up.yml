@@ -1,0 +1,31 @@
+---
+#cleanup temporary files and folders
+
+- name: 60 Delete task_exports folder
+  delegate_to: localhost
+  run_once: true
+  become: true
+  become_method: ansible.builtin.sudo
+  ansible.builtin.file:
+    path: "{{ controller_dir }}"
+    state: absent
+  failed_when: false
+
+- name: 60 Delete source export directory
+  delegate_to: "{{ source_server }}"
+  ansible.windows.win_file:
+    path: "{{ export_dir }}"
+    state: absent
+  failed_when: false
+
+- name: 60 Delete import directory on each destination
+  delegate_to: "{{ dest_host }}"
+  ansible.windows.win_file:
+    path: "{{ import_dir }}"
+    state: absent
+  loop: "{{ destination_servers }}"
+  loop_control:
+    loop_var: dest_host
+    label: "{{ dest_host }}"
+  failed_when: false
+  register: cleanup_dest_results

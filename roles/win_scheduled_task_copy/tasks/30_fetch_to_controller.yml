@@ -1,0 +1,48 @@
+---
+- name: 30 Verify exported XML exists on source before fetch
+  delegate_to: "{{ source_server }}"
+  ansible.windows.win_stat:
+    path: "{{ export_dir }}\\{{ item | regex_replace('[\\\\/]', '_') }}.xml"
+  register: source_xml_stats
+  loop: "{{ task_names }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: 30 Fail if any exported XML is missing on source
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.size | int > 0
+    fail_msg: "Expected exported XML missing or empty on source for task {{ item.item }}"
+  loop: "{{ source_xml_stats.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: 30 Fetch exported XML files to controller
+  delegate_to: "{{ source_server }}"
+  ansible.builtin.fetch:
+    src: "{{ export_dir }}/{{ item | regex_replace('[\\\\/]', '_') }}.xml"
+    dest: "{{ controller_dir }}/"
+    flat: true
+  loop: "{{ task_names }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: 30 Verify fetched XML exists on controller
+  delegate_to: localhost
+  ansible.builtin.stat:
+    path: "{{ controller_dir }}/{{ item | regex_replace('[\\\\/]', '_') }}.xml"
+  register: controller_fetch_stats
+  loop: "{{ task_names }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: 30 Fail if fetched XML is missing on controller
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.size | int > 0
+    fail_msg: "Fetched XML missing or empty on controller for task {{ item.item }}"
+  loop: "{{ controller_fetch_stats.results }}"
+  loop_control:
+    label: "{{ item.item }}"

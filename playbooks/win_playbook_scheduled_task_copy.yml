@@ -4,4 +4,4 @@
   gather_facts: false
 
   roles:
-    - win_scheduledTaskCopy
+    - win_scheduled_task_copy

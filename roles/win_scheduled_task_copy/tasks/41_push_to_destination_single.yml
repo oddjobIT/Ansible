@@ -1,0 +1,44 @@
+---
+- name: 41 Push XML exports to destination host
+  delegate_to: "{{ dest_host }}"
+  block:
+    - name: 41 Ensure import directory exists on destination
+      ansible.windows.win_file:
+        path: "{{ import_dir }}"
+        state: directory
+
+    - name: 41 Verify controller XML exists before copy
+      delegate_to: localhost
+      ansible.builtin.stat:
+        path: "{{ controller_dir }}/{{ item | regex_replace('[\\\\/]', '_') }}.xml"
+      register: controller_xml_stat
+      loop: "{{ task_names }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: 41 Fail if controller XML is missing before copy
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.size | int > 0
+        fail_msg: "Missing controller XML for task {{ item.item }} before copy to {{ dest_host }}"
+      loop: "{{ controller_xml_stat.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: 41 Push XML exports to destination
+      ansible.windows.win_copy:
+        src: "{{ controller_dir }}/{{ item | regex_replace('[\\\\/]', '_') }}.xml"
+        dest: "{{ import_dir }}\\{{ item | regex_replace('[\\\\/]', '_') }}.xml"
+      loop: "{{ task_names }}"
+      loop_control:
+        label: "{{ item }}"
+
+  rescue:
+    - name: 41 Report push failure for destination
+      ansible.builtin.debug:
+        msg: "Push failed for destination host {{ dest_host }}"
+
+    - name: 41 Fail push stage for destination
+      ansible.builtin.fail:
+        msg: "Push failed for destination host {{ dest_host }}"

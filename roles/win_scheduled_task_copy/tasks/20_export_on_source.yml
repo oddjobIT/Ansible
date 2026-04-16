@@ -1,0 +1,37 @@
+- name: 20 Ensure export directory exists
+  delegate_to: "{{ source_server }}"
+  ansible.windows.win_file:
+    path: "{{ export_dir }}"
+    state: directory
+
+- name: 20 Export tasks to XML
+  delegate_to: "{{ source_server }}"
+  ansible.windows.win_shell: |
+    $ErrorActionPreference = 'Stop'
+    $name = "{{ item }}"
+    $safe = $name -replace '[\\/]', '_'
+    $out  = Join-Path "{{ export_dir }}" ($safe + ".xml")
+
+    $xml = schtasks /Query /TN "$name" /XML 2>&1
+    if ($LASTEXITCODE -ne 0) {
+      throw "schtasks query failed for task [$name]. Output: $xml"
+    }
+
+    $xml | Out-File -FilePath $out -Encoding Unicode
+
+    if (-not (Test-Path $out)) {
+      throw "Export file was not created for task [$name]: $out"
+    }
+
+    $file = Get-Item $out
+    if ($file.Length -eq 0) {
+      throw "Export file is empty for task [$name]: $out"
+    }
+  loop: "{{ task_names }}"
+  loop_control:
+    label: "{{ item }}"
+  register: export_results
+
+- name: 20 Show export summary
+  ansible.builtin.debug:
+    var: export_results.results

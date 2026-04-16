@@ -1,0 +1,33 @@
+- name: Scheduled task migration workflow
+  block:
+    - name: Debug variables
+      ansible.builtin.import_tasks: 00_debug.yml
+
+    - name: Validate inputs
+      ansible.builtin.import_tasks: 05_validate.yml
+
+    - name: Prepare controller staging area
+      ansible.builtin.import_tasks: 10_prep_controller.yml
+
+    - name: Export scheduled tasks on source
+      ansible.builtin.import_tasks: 20_export_on_source.yml
+
+    - name: Fetch exported tasks to controller
+      ansible.builtin.import_tasks: 30_fetch_to_controller.yml
+
+    - name: Push tasks to destination hosts
+      ansible.builtin.import_tasks: 40_push_to_destination.yml
+
+    - name: Import tasks on destination hosts
+      ansible.builtin.import_tasks: 50_import_on_destination.yml
+
+  rescue:
+    - name: Show workflow failure details
+      ansible.builtin.debug:
+        msg: >
+          Scheduled task migration failed.
+          Check prior task output for the failing host/task.
+
+  always:
+    - name: Clean up controller files
+      ansible.builtin.import_tasks: 60_clean_up.yml

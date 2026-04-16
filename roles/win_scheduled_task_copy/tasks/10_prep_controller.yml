@@ -1,0 +1,26 @@
+---
+- name: 10 Ensure controller staging folder exists
+  delegate_to: localhost
+  run_once: true
+  become: true
+  become_method: ansible.builtin.sudo
+  ansible.builtin.file:
+    path: "{{ controller_dir }}"
+    state: directory
+    mode: "1777"
+
+- name: 10 Verify controller staging folder is writable
+  delegate_to: localhost
+  run_once: true
+  ansible.builtin.tempfile:
+    state: file
+    path: "{{ controller_dir }}"
+  register: controller_write_test
+
+- name: 10 Remove controller write test file
+  delegate_to: localhost
+  run_once: true
+  ansible.builtin.file:
+    path: "{{ controller_write_test.path }}"
+    state: absent
+  when: controller_write_test.path is defined
